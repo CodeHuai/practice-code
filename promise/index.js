@@ -36,12 +36,14 @@ class MyPromise {
   }
 
   /**
-   * 
-   * @param {成功回调} onFulfilled 
-   * @param {异常回调} onRejected 
+   *
+   * @param {成功回调} onFulfilled
+   * @param {异常回调} onRejected
    * @returns 返回一个promise
    */
+  // 当调用then的时候，我们这里已经能够区分出他的状态和值了
   then(onFulfilled, onRejected) {
+    // 这里new了一个新的promise,就会直接执行
     const promise2 = new MyPromise((resolve, reject) => {
       if (this.resultState === MyPromise.FULFILLED) {
         // 这里之所以要加一个定时器是因为promise2可能还没有生成，所以要加上异步逻辑
@@ -97,8 +99,60 @@ class MyPromise {
 }
 
 /**
- * 判断then返回的promise走的逻辑
+ * 判断then返回的promise2走的逻辑,也就是x决定promise2的成功还是失败
  */
-function resolvePromise(promise, x, resolve, reject) {}
+function resolvePromise(promise2, x, resolve, reject) {
+  // 这里如果返回同一个promise,会等待它的状态改变，所以这里需要判断是否为同一个promise
+  // 如果 Promise 和 x 指向同一对象，以 TypeError 为拒因拒绝执行 Promise
+  if (promise2 === x) {
+    return reject(
+      new TypeError(
+        "如果 Promise 和 x 指向同一对象，以 TypeError 为拒因拒绝执行 Promise"
+      )
+    );
+  }
+
+  // 判断x是否是一个promise
+  // promise是一个含有then方法的对象或者函数
+  if (typeof x === "function" || (typeof x === "object" && x !== null)) {
+    try {
+      const then = x.then;
+      let hasCalled = false;
+      if (typeof then === "function") {
+        // 说明是一个promise
+        then.call(
+          x,
+          (y) => {
+            if (hasCalled) {
+              return;
+            }
+            hasCalled = true;
+            // 为了防止promise解析后的结果依旧是promise，所以需要递归的处理，主要是一些用户可能在resolve中又是一个promise
+            resolvePromise(promise2, y, resolve, reject);
+          },
+          (r) => {
+            if (hasCalled) {
+              return;
+            }
+            hasCalled = true;
+            reject(r);
+          }
+        );
+      } else {
+        // 是一个对象不是null,但是没有then方法；或者是一个函数，但是没有then方法
+        resolve(x);
+      }
+    } catch (error) {
+      if (hasCalled) {
+        return;
+      }
+      hasCalled = true;
+      reject(error);
+    }
+  } else {
+    // 如果不是一个promise,规范里面直接resolve
+    resolve(x);
+  }
+}
 
 module.exports = MyPromise;
