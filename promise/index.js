@@ -43,6 +43,14 @@ class MyPromise {
    */
   // 当调用then的时候，我们这里已经能够区分出他的状态和值了
   then(onFulfilled, onRejected) {
+    // 判断这里的参数非必填项问题
+    onFulfilled = typeof onFulfilled === "function" ? onFulfilled : (v) => v;
+    onRejected =
+      typeof onRejected === "function"
+        ? onRejected
+        : (e) => {
+            throw e;
+          };
     // 这里new了一个新的promise,就会直接执行
     const promise2 = new MyPromise((resolve, reject) => {
       if (this.resultState === MyPromise.FULFILLED) {
@@ -156,3 +164,13 @@ function resolvePromise(promise2, x, resolve, reject) {
 }
 
 module.exports = MyPromise;
+
+// 测试用例  禁不住测试 0.0
+MyPromise.deferred = function () {
+  let dfd = {};
+  dfd.MyPromise = new MyPromise((resolve, reject) => {
+    dfd.resolve = resolve;
+    dfd.reject = reject;
+  });
+  return dfd;
+};
