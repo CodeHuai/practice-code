@@ -1,39 +1,40 @@
-class MyPromise {
+class Promise {
   static PENDING = "pending";
   static FULFILLED = "fulfilled";
   static REJECTED = "rejected";
 
-  constructor(excutor) {
-    if (typeof excutor !== "function") {
-      return new Error("excutor is not a function!");
+  constructor(executor) {
+    if (typeof executor !== "function") {
+      return new Error("executor is not a function!");
     }
-    this.resultState = MyPromise.PENDING;
+    this.resultState = Promise.PENDING;
     this.resultResult = null;
-    this.fullfilledCallBackList = [];
-    this.rejectedCallBackList = [];
+    this.onResolvedCallbacks = [];
+    this.onRejectedCallbacks = [];
 
     try {
-      excutor(this.resolve.bind(this), this.reject.bind(this));
+      executor(this.resolve.bind(this), this.reject.bind(this));
     } catch (error) {
-      this.reject(error);
+      reject(error);
     }
   }
 
-  resolve(value) {
-    if (this.resultState === MyPromise.PENDING) {
-      this.resultState = MyPromise.FULFILLED;
+  resolve = (value) => {
+    if (this.resultState === Promise.PENDING) {
+      this.resultState = Promise.FULFILLED;
       this.resultResult = value;
-      this.fullfilledCallBackList.forEach((cb) => cb());
+      this.onResolvedCallbacks.forEach((cb) => cb());
     }
-  }
+  };
 
-  reject(reason) {
-    if (this.resultState === MyPromise.PENDING) {
-      this.resultState = MyPromise.REJECTED;
+  reject = (reason) => {
+    if (this.resultState === Promise.PENDING) {
+      this.resultState = Promise.REJECTED;
       this.resultResult = reason;
-      this.rejectedCallBackList.forEach((cb) => cb());
+      // 失败调用成功的回调
+      this.onRejectedCallbacks.forEach((cb) => cb());
     }
-  }
+  };
 
   /**
    *
@@ -52,8 +53,8 @@ class MyPromise {
             throw e;
           };
     // 这里new了一个新的promise,就会直接执行
-    const promise2 = new MyPromise((resolve, reject) => {
-      if (this.resultState === MyPromise.FULFILLED) {
+    const promise2 = new Promise((resolve, reject) => {
+      if (this.resultState === Promise.FULFILLED) {
         // 这里之所以要加一个定时器是因为promise2可能还没有生成，所以要加上异步逻辑
         setTimeout(() => {
           // 这里处理了then的链式调用主要逻辑。上一个then的返回值，是下一个then的某一个回调函数对应的参数
@@ -62,24 +63,24 @@ class MyPromise {
             resolvePromise(promise2, x, resolve, reject);
           } catch (error) {
             // 这里之所以不需要考虑this指向，是因为在上面已经处理了this的指向问题
-            reject(reson);
+            reject(error);
           }
         });
       }
 
-      if (this.resultState === MyPromise.REJECTED) {
+      if (this.resultState === Promise.REJECTED) {
         setTimeout(() => {
           try {
             const x = onRejected(this.resultResult);
             resolvePromise(promise2, x, resolve, reject);
           } catch (error) {
-            reject(reason);
+            reject(error);
           }
         });
       }
 
-      if (this.resultState === MyPromise.PENDING) {
-        this.fullfilledCallBackList.push(() => {
+      if (this.resultState === Promise.PENDING) {
+        this.onResolvedCallbacks.push(() => {
           setTimeout(() => {
             try {
               const x = onFulfilled(this.resultResult);
@@ -90,7 +91,7 @@ class MyPromise {
           });
         });
 
-        this.rejectedCallBackList.push(() => {
+        this.onRejectedCallbacks.push(() => {
           setTimeout(() => {
             try {
               const x = onRejected(this.resultResult);
@@ -113,19 +114,15 @@ function resolvePromise(promise2, x, resolve, reject) {
   // 这里如果返回同一个promise,会等待它的状态改变，所以这里需要判断是否为同一个promise
   // 如果 Promise 和 x 指向同一对象，以 TypeError 为拒因拒绝执行 Promise
   if (promise2 === x) {
-    return reject(
-      new TypeError(
-        "如果 Promise 和 x 指向同一对象，以 TypeError 为拒因拒绝执行 Promise"
-      )
-    );
+    return reject(new TypeError("Chaining cycle detected for promise"));
   }
 
   // 判断x是否是一个promise
   // promise是一个含有then方法的对象或者函数
   if (typeof x === "function" || (typeof x === "object" && x !== null)) {
+    let hasCalled = false;
     try {
       const then = x.then;
-      let hasCalled = false;
       if (typeof then === "function") {
         // 说明是一个promise
         then.call(
@@ -163,12 +160,15 @@ function resolvePromise(promise2, x, resolve, reject) {
   }
 }
 
-module.exports = MyPromise;
+module.exports = Promise;
 
-// 测试用例  禁不住测试 0.0
-MyPromise.deferred = function () {
+// 测试用例
+// promises-aplus-tests -g
+// promises-aplus-tests 文件明
+Promise.deferred = function () {
+  // deferred  all race catch ...
   let dfd = {};
-  dfd.MyPromise = new MyPromise((resolve, reject) => {
+  dfd.promise = new Promise((resolve, reject) => {
     dfd.resolve = resolve;
     dfd.reject = reject;
   });
