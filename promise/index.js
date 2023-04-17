@@ -15,7 +15,7 @@ class Promise {
     try {
       executor(this.resolve.bind(this), this.reject.bind(this));
     } catch (error) {
-      reject(error);
+      this.reject(error);
     }
   }
 
@@ -38,8 +38,8 @@ class Promise {
 
   /**
    *
-   * @param {成功回调} onFulfilled
-   * @param {异常回调} onRejected
+   * @param {function} onFulfilled
+   * @param {function} onRejected
    * @returns 返回一个promise
    */
   // 当调用then的时候，我们这里已经能够区分出他的状态和值了
