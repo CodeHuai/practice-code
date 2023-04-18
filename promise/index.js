@@ -20,6 +20,9 @@ class Promise {
   }
 
   resolve = (value) => {
+    if(value instanceof Promise){
+      return value.then(this.resolve.bind(this), this.reject.bind(this))
+    }
     if (this.resultState === Promise.PENDING) {
       this.resultState = Promise.FULFILLED;
       this.resultResult = value;
@@ -40,7 +43,7 @@ class Promise {
    *
    * @param {function} onFulfilled
    * @param {function} onRejected
-   * @returns 返回一个promise
+   * @returns Promise
    */
   // 当调用then的时候，我们这里已经能够区分出他的状态和值了
   then(onFulfilled, onRejected) {
@@ -104,6 +107,58 @@ class Promise {
       }
     });
     return promise2;
+  }
+
+  static all(values){
+  return new Promise((resolve, reject) => {
+    let arr = []
+    let count = 0
+
+    const processData = (data, index) => {
+      arr[index] = data
+      count += 1
+      if(count === values.length){
+        resolve(arr)
+      }
+    }
+    for (let index = 0; index < values.length; index++) {
+      const cur = values[index]
+      Promise.resolve(cur).then(data => {
+        processData(data, index)
+      }, reject)
+    }
+  })
+  }
+
+  /**
+   * 捕捉错误
+   * @param errCallback 错误回调方法
+   * @returns {Promise}
+   */
+  catch(errCallback){
+    return this.then(null, errCallback)
+  }
+
+  /**
+   * promise.resolve 方法
+   * @param value 成功值
+   * @returns {Promise} 返回一个成功的promise
+   */
+  static resolve(value){
+    return new Promise((resolve, reject) => {
+      resolve(value)
+    })
+  }
+
+  /**
+   * promise.reject 方法
+   * @param reason 错误值
+   * @returns {Promise} 返回一个失败的promise
+   */
+  static reject(reason){
+    return new Promise((resolve, reject) => {
+      reject(reason)
+    })
   }
 }
 

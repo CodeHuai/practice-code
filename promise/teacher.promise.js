@@ -151,12 +151,22 @@ class Promise {
     return promise2;
   }
 
+  /**
+   * Promise.resolve 会等待这个promise执行完毕
+   * @param value
+   * @returns {Promise}
+   */
   static resolve(value) {
     return new Promise((resolve, reject) => {
       resolve(value);
     });
   }
 
+  /**
+   * Promise.reject 会直接失败，不再解析
+   * @param reason
+   * @returns {Promise}
+   */
   static reject(reason) {
     return new Promise((resolve, reject) => {
       reject(reason);
