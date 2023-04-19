@@ -130,6 +130,14 @@ class Promise {
   })
   }
 
+  static race(values){
+    return new Promise((resolve, reject) => {
+      for (let i = 0; i < values.length; i++) {
+        Promise.resolve(values[i]).then(resolve, reject);
+      }
+    })
+  }
+
   /**
    * 捕捉错误
    * @param errCallback 错误回调方法
