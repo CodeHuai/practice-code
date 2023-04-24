@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+  <title>覆盖物的添加与移除</title>
+  <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+  <script src="https://cache.amap.com/lbs/static/es5.min.js"></script>
+  <script src="https://webapi.amap.com/maps?v=2.0&key=69826d8b560eb047de101d7fae9ff485"></script>
+  <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+  <style>
+    html,
+    body,
+    #container {
+      width: 100%;
+      height: 100%;
+    }
+
+    label {
+      width: 55px;
+      height: 26px;
+      line-height: 26px;
+      margin-bottom: 0;
+    }
+
+    button.btn {
+      width: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+  <script>
+    //计算长度
+    function pathLenght(node1, node2) {
+      // 勾股玄
+      return Math.pow(Math.pow(node1.lat - node2.lat, 2) + Math.pow(node1.lng - node2.lng, 2), 0.5)
+
+    }
+
+    //获取两点之间指定比例的经纬度
+    function pointAlong(node1, node2, scale) {
+      return new AMap.LngLat(node1.lng + (node2.lng - node1.lng) * scale, node1.lat + (node2.lat - node1.lat) * scale);
+    }
+
+    /**
+     * 等分折现
+     * @param pathCoordinateList 折线点位列表
+     * @param num 分割段数
+     * 
+     **/
+    function divideLine(pathCoordinateList, num) {
+      //计算总长度
+      let length = 0.0;
+      console.log("LENGHT：" + pathCoordinateList.length)
+      for (let index = 1; index < pathCoordinateList.length; index++) {
+        var preNode = pathCoordinateList[index - 1];
+        var node = pathCoordinateList[index];
+
+        length += pathLenght(preNode, node)
+      }
+
+      interval = length / num;
+      console.log("总长度：" + length + " 每段长度：" + interval + " 段数：" + num)
+      //已使用长度
+      let usedLength = 0;
+      //已使用数量
+      let usedIndex = 0;
+
+      let coordinateList = [];
+      //加入第一个点
+      coordinateList.push(pathCoordinateList[0]);
+      for (let i = 0; i < num; i++) {
+
+        if (usedIndex < pathCoordinateList.length - 1) {
+
+          var preNode = pathCoordinateList[usedIndex];
+          var node = pathCoordinateList[usedIndex + 1];
+          var lineLenght = pathLenght(preNode, node);
+
+          if (lineLenght - usedLength >= interval) {
+
+            //当前直线长度够
+            //沿着线条的方向获取指定位置的经纬度
+            coordinateList.push(pointAlong(preNode, node, (usedLength + interval) / lineLenght));
+
+            usedLength += interval;
+          } else {
+            //当前直线长度不够
+            var needLength = interval - (lineLenght - usedLength);
+            while (true) {
+              usedIndex++;
+              if (usedIndex >= pathCoordinateList.length - 1) {
+                //会出现四舍五入的情况 导致越界 故越界时为最后一个点
+                coordinateList.push(pathCoordinateList[pathCoordinateList.length - 1]);
+                break;
+              }
+              var mPreNode = pathCoordinateList[usedIndex];
+              var mNode = pathCoordinateList[usedIndex + 1];
+              var mLineLenght = pathLenght(mPreNode, mNode);
+              if (mLineLenght - needLength >= 0) {
+                //长度够 加入下一个点
+                coordinateList.push(pointAlong(mPreNode, mNode, needLength / mLineLenght));
+                usedLength = needLength;
+                break;
+              } else {
+                needLength -= mLineLenght;
+              }
+            }
+          }
+
+        }
+      }
+      return coordinateList;
+    }
+
+    var map = new AMap.Map('container', {
+      resizeEnable: true,
+      zoom: 11,
+      center: [116.397428, 39.90923]
+    });
+
+    var path = [
+      new AMap.LngLat(116.368904, 39.913423),
+      new AMap.LngLat(116.382122, 39.901176),
+      new AMap.LngLat(116.387271, 39.912501),
+      new AMap.LngLat(116.398258, 39.904600)
+    ];
+
+    var polyline = new AMap.Polyline({
+      path: path,
+      borderWeight: 2, // 线条宽度，默认为 1
+      strokeColor: 'red', // 线条颜色
+      lineJoin: 'round' // 折线拐点连接处样式
+    });
+
+
+    // 多个点实例组成的数组
+    let points = divideLine(path, 10);
+    var markerList = [];
+    points.forEach(element => {
+      markerList.push(new AMap.Marker({
+        icon: "https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+        offset: new AMap.Pixel(-26, -60),
+        position: element
+      }));
+    });
+    map.add(markerList);
+
+    map.add(polyline);
+  </script>
+</body>
+
+</html>
