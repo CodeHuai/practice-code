@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create a Web Map</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.43/esri/css/esri.css">
+    <style>
+        html, body, #mapDiv, .map.container {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+
+        #legendDiv {
+            position: absolute !important;
+            bottom: 10px;
+            right: 20px;
+            background-color: #fff;
+            z-index: 99;
+        }
+    </style>
+
+    <script>let dojoConfig = {parseOnLoad: true};</script>
+    <script src="https://js.arcgis.com/3.43compact/"></script>
+    <script>
+        let map;
+        require([
+            "esri/map",
+            "esri/arcgis/utils",
+            "esri/dijit/Legend",
+            "esri/dijit/Directions",
+            "dojo/parser",
+            "dijit/layout/BorderContainer",
+            "dijit/layout/ContentPane"
+        ], function (Map, arcgisUtils, Legend, Directions, parser) {
+            arcgisUtils.createMap('ae2fdf0e6aeb4d5dbc2dd97f88bf5531', 'mapDiv')
+                .then(res => {
+                    console.log(res)
+                    map = res.map
+
+                    // 图例功能
+                    // const legend = new Legend({
+                    //     map: map,
+                    //     layerInfos: (arcgisUtils.getLegendLayers(res))
+                    // }, 'legendDiv')
+                    //
+                    // legend.startup();
+
+                    //     方向小工具
+                    const directions = new Directions({map}, 'dir')
+                    directions.startup()
+                })
+        });
+    </script>
+</head>
+
+<body>
+<!--地图容器-->
+<div id="mapDiv"></div>
+<!--图例-->
+<!--<div id="legendDiv"></div>-->
+<!--方向小工具-->
+<div id="dir"></div>
+</body>
+</html>
